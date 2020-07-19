@@ -35,6 +35,7 @@ SENSOR_TYPE_HUMIDITY = "humidity"
 SENSOR_TYPE_POWER = "powersensor"
 SENSOR_TYPE_TEMPERATURE = "temperature"
 SENSOR_TYPE_WINDOWHANDLE = "windowhandle"
+SENSOR_TYPE_CONTACT = "contact"
 
 SENSOR_TYPES = {
     SENSOR_TYPE_HUMIDITY: {
@@ -59,6 +60,13 @@ SENSOR_TYPES = {
         "name": "WindowHandle",
         "unit": None,
         "icon": "mdi:window",
+        "class": None,
+    },
+    },
+    SENSOR_TYPE_CONTACT: {
+        "name": "Contact",
+        "unit": None,
+        "icon": "mdi:contact",
         "class": None,
     },
 }
@@ -256,14 +264,29 @@ class EnOceanWindowHandle(EnOceanSensor):
 
     def value_changed(self, packet):
         """Update the internal state of the sensor."""
+        
+class EnOceanContact(EnOceanSensor):
+    """Representation of an EnOcean contact device.
 
-        action = (packet.data[1] & 0x70) >> 4
+    EEPs (EnOcean Equipment Profiles):
+    - D5-00-01 (Contacts and Switches)
+    """
 
-        if action == 0x07:
+    def __init__(self, dev_id, dev_name):
+        """Initialize the EnOcean Contact sensor device."""
+        super().__init__(dev_id, dev_name, SENSOR_TYPE_CONTACT)
+
+    def value_changed(self, packet):
+        """Update the internal state of the sensor."""
+        if packet.rorg != 0xd5:
+            return
+        
+        action = (packet.data[1]) 
+
+        if action == 0x09:
             self._state = STATE_CLOSED
-        if action in (0x04, 0x06):
+        if action in (0x08):
             self._state = STATE_OPEN
-        if action == 0x05:
-            self._state = "tilt"
+       
 
         self.schedule_update_ha_state()
