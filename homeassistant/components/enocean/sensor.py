@@ -11,12 +11,13 @@ from homeassistant.const import (
     DEVICE_CLASS_HUMIDITY,
     DEVICE_CLASS_POWER,
     DEVICE_CLASS_TEMPERATURE,
+    DEVICE_CLASS_ILLUMINANCE,
     POWER_WATT,
     STATE_CLOSED,
     STATE_OPEN,
     TEMP_CELSIUS,
     UNIT_PERCENTAGE,
-)
+ )
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.restore_state import RestoreEntity
 
@@ -36,11 +37,12 @@ SENSOR_TYPE_POWER = "powersensor"
 SENSOR_TYPE_TEMPERATURE = "temperature"
 SENSOR_TYPE_WINDOWHANDLE = "windowhandle"
 SENSOR_TYPE_CONTACT = "contact"
+SENSOR_TYPE_ILLUMINANCE = "illuminance"
 
 SENSOR_TYPES = {
     SENSOR_TYPE_HUMIDITY: {
         "name": "Humidity",
-        "unit": UNIT_PERCENTAGE,
+        "unit": HUMIDITY_PERCENTAGE,
         "icon": "mdi:water-percent",
         "class": DEVICE_CLASS_HUMIDITY,
     },
@@ -62,12 +64,17 @@ SENSOR_TYPES = {
         "icon": "mdi:window",
         "class": None,
     },
-    },
     SENSOR_TYPE_CONTACT: {
         "name": "Contact",
         "unit": None,
         "icon": "mdi:contact",
         "class": None,
+    },
+    SENSOR_TYPE_ILLUMINANCE: {
+        "name": "Illuminance",
+        "unit": ILLUMINATION_LUX_PER_SQUARE_METER,
+        "icon": None,
+        "class": DEVICE_CLASS_ILLUMINANCE,
     },
 }
 
@@ -111,6 +118,12 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
     elif sensor_type == SENSOR_TYPE_WINDOWHANDLE:
         add_entities([EnOceanWindowHandle(dev_id, dev_name)])
+        
+    elif sensor_type == SENSOR_TYPE_CONTACT:
+        add_entities([EnOceanContactHandle(dev_id, dev_name)])
+        
+    elif sensor_type == SENSOR_TYPE_ILLUMINANCE:
+        add_entities([EnOceanIlluminanceHandle(dev_id, dev_name)])
 
 
 class EnOceanSensor(EnOceanEntity, RestoreEntity):
@@ -250,7 +263,28 @@ class EnOceanHumiditySensor(EnOceanSensor):
         self._state = round(humidity, 1)
         self.schedule_update_ha_state()
 
+class EnOceanIlluminanceSensor(EnOceanSensor):
+    """Representation of an EnOcean Illuminance sensor device.
 
+    EEPs (EnOcean Equipment Profiles):
+    - A5-06-02 (Light Sensor, Range 0 to 1020 Lux) 8bit
+    
+    """
+
+    def __init__(self, dev_id, dev_name):
+        """Initialize the EnOcean Illuminance sensor device."""
+        super().__init__(dev_id, dev_name, SENSOR_TYPE_ILLUMINANCE)
+
+    def value_changed(self, packet):
+        """Update the internal state of the sensor."""
+        if packet.rorg != 0xA5:
+            return
+        humidity = packet.data[1] * 4
+        self._state = round(illuminance, 1)
+        self.schedule_update_ha_state()
+
+        
+        
 class EnOceanWindowHandle(EnOceanSensor):
     """Representation of an EnOcean window handle device.
 
