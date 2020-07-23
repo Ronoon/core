@@ -35,6 +35,7 @@ SENSOR_TYPE_HUMIDITY = "humidity"
 SENSOR_TYPE_POWER = "powersensor"
 SENSOR_TYPE_TEMPERATURE = "temperature"
 SENSOR_TYPE_WINDOWHANDLE = "windowhandle"
+SENSOR_TYPE_CONTACT = "contact"
 
 SENSOR_TYPES = {
     SENSOR_TYPE_HUMIDITY: {
@@ -59,6 +60,12 @@ SENSOR_TYPES = {
         "name": "WindowHandle",
         "unit": None,
         "icon": "mdi:window",
+        "class": None,
+    },
+    SENSOR_TYPE_CONTACT: {
+        "name": "Contact",
+        "unit": None,
+        "icon": "mdi-toggle-switch-on",
         "class": None,
     },
 }
@@ -103,6 +110,9 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
     elif sensor_type == SENSOR_TYPE_WINDOWHANDLE:
         add_entities([EnOceanWindowHandle(dev_id, dev_name)])
+
+    elif sensor_type == SENSOR_TYPE_CONTACT:
+        add_entities([EnOceanContact(dev_id, dev_name)])
 
 
 class EnOceanSensor(EnOceanEntity, RestoreEntity):
@@ -265,5 +275,29 @@ class EnOceanWindowHandle(EnOceanSensor):
             self._state = STATE_OPEN
         if action == 0x05:
             self._state = "tilt"
+
+        self.schedule_update_ha_state()
+
+
+class EnOceanContact(EnOceanSensor):
+    """Representation of an EnOcean Contact device.
+
+    EEPs (EnOcean Equipment Profiles):
+    - D5-00-01 (NodOn Magnetic Contact)
+    """
+
+    def __init__(self, dev_id, dev_name):
+        """Update the internal state of the sensor."""
+        super().__init__(dev_id, dev_name, SENSOR_TYPE_WINDOWHANDLE)
+
+    def value_changed(self, packet):
+        """Update the internal state of the sensor."""
+
+        action = (packet.data[1] )
+
+        if action == 0x01:
+            self._state = STATE_CLOSED
+        if action == 0x00:
+            self._state = STATE_OPEN
 
         self.schedule_update_ha_state()
