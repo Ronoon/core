@@ -288,7 +288,7 @@ class EnOceanContact(EnOceanSensor):
 
     def __init__(self, dev_id, dev_name):
         """Update the internal state of the sensor."""
-        super().__init__(dev_id, dev_name, SENSOR_TYPE_WINDOWHANDLE)
+        super().__init__(dev_id, dev_name, SENSOR_TYPE_CONTACT)
 
     def value_changed(self, packet):
         """Update the internal state of the sensor."""
